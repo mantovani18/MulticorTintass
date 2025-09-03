@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multicor Tintas - Orçamento Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #6a11cb; --secondary-color: #2575fc; --dark-color: #3a3a3a;
+      --light-color: #ffffff; --background-light: #f7f8fc; --text-color: #555;
+      --success-color: #28a745; --font-family: 'Poppins', sans-serif; 
+      --shadow-sm: 0 4px 6px rgba(0,0,0,0.05); --shadow-md: 0 10px 15px rgba(0,0,0,0.1); 
+      --border-radius: 12px;
+    }
+    body { font-family: var(--font-family); margin: 0; padding-top: 80px; background-color: #000; color: var(--text-color); }
+    #backgroundCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+    #siteContent {
+      position: relative;
+      z-index: 1;
+    }
+    header { background-color: var(--light-color); padding: 1rem 2rem; box-shadow: var(--shadow-sm); position: fixed; width: 100%; top: 0; z-index: 1000; }
+    nav { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; }
+    .logo { font-size: 1.8rem; font-weight: 700; background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    nav ul { list-style: none; display: flex; gap: 2.5rem; margin: 0; }
+    nav a { text-decoration: none; color: var(--dark-color); font-weight: 600; }
+    section { padding: 5rem 2rem; text-align: center; }
+    h2 { font-size: 2.8rem; margin-bottom: 2.5rem;  color: #ffffff; font-weight: 700; }
+    .filter-container { max-width: 1200px; margin: 0 auto 2.5rem auto; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; align-items: center; }
+    #search-bar { padding: 12px 20px; font-size: 1rem; border-radius: 50px; border: 1px solid #ddd; min-width: 250px; }
+    #category-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+    .filter-btn { padding: 10px 20px; font-size: 0.9rem; font-weight: 600; border: 1px solid #ddd; background-color: var(--light-color); border-radius: 50px; cursor: pointer; transition: all 0.3s ease; }
+    .filter-btn.active { background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); color: var(--light-color); border-color: var(--primary-color); }
+    .product-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2.5rem; max-width: 1200px; margin: 0 auto; }
+    .product-item { background-color: var(--light-color); border-radius: var(--border-radius); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .product-item:hover { transform: translateY(-10px); box-shadow: var(--shadow-md); }
+    .product-item img { width: 100%; height: 220px; object-fit: cover; }
+    .product-content { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; text-align: left; }
+    .product-content h3 { margin: 0 0 0.5rem 0; color: var(--dark-color); font-size: 1.25rem; }
+    .btn { padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; }
+    .btn-primary { background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); color: var(--light-color); }
+    .btn-secondary { background-color: #e9ecef; color: var(--dark-color); }
+    .btn-primary:hover { transform: translateY(-3px); }
+    .btn-secondary:hover { background-color: #d3d9df; }
+    .cart-container { max-width: 800px; margin: 0 auto; background: var(--light-color); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); }
+    .cart-item { display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: center; border-bottom: 1px solid #eee; padding: 1rem 0; }
+    .quantity-controls { display: flex; align-items: center; gap: .7rem; }
+    .quantity-controls button { background: #f1f1f1; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; }
+    .remove-btn { background: none; border: none; color: #ff6b6b; font-size: 1.2rem; cursor: pointer; }
+    .cart-actions { display: none; flex-direction: column; gap: 1rem; margin-top: 2rem; }
+    #orcamento-resumo { margin-top: 2rem; background: #f8f9fa; padding: 1.5rem; border-radius: var(--border-radius); text-align: left; display: none; }
+    footer { background: #e9ecef; padding: 2.5rem; margin-top: 2rem; text-align: center; }
+
+    #toast-notification {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: var(--success-color);
+      color: #fff;
+      text-align: center;
+      border-radius: 50px;
+      padding: 16px;
+      position: fixed;
+      z-index: 2000;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 30px;
+      font-size: 1rem;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      transition: visibility 0.5s, opacity 0.5s, bottom 0.5s ease-in-out;
+    }
+    #toast-notification.show {
+      visibility: visible;
+      opacity: 1;
+      bottom: 50px;
+    }
+    
+    .social-links { margin-bottom: 1rem; }
+    .social-links a { display: inline-block; transition: transform 0.2s ease-in-out; }
+    .social-links a:hover { transform: scale(1.1); }
+    .social-links svg { width: 32px; height: 32px; fill: var(--dark-color); }
+  </style>
+</head>
+<body>
+  <canvas id="backgroundCanvas"></canvas>
+  <div id="siteContent">
+  <header>
+    <nav>
+      <div class="logo">Multicor Tintas</div>
+      <ul>
+        <li><a href="#produtos">Produtos</a></li>
+        <li><a href="#carrinho">Orçamento</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section id="produtos">
+      <h2>Nossos Produtos</h2>
+      <div class="filter-container">
+        <input type="search" id="search-bar" placeholder="🔎 Buscar por nome...">
+        <div id="category-filters"></div>
+      </div>
+      <div id="product-gallery" class="product-gallery"></div>
+    </section>
+
+    <section id="carrinho">
+      <h2>Carrinho de Orçamento</h2>
+      <div class="cart-container">
+        <div id="cart-items"></div>
+        <p id="cart-empty-msg">Seu carrinho está vazio.</p>
+        <div id="cart-actions" class="cart-actions">
+          <button id="clear-cart-btn" class="btn btn-secondary">Limpar Carrinho</button>
+          <button id="gerar-btn" class="btn btn-primary">Gerar Orçamento</button>
+          <div id="orcamento-resumo"></div>
+          <button id="whatsapp-btn" class="btn btn-primary" style="display:none;">Enviar pelo WhatsApp</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="social-links">
+      <a href="https://www.instagram.com/multicortintasrolandia/" target="_blank" rel="noopener noreferrer" title="Siga-nos no Instagram">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+          <path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/>
+        </svg>
+      </a>
+    </div>
+    <p>&copy; 2025 Multicor Tintas. Todos os direitos reservados.</p>
+  </footer>
+
+  </div>
+  <div id="toast-notification"></div>
+
+  <script>
+    // Pingos de tintas coloridos animados
+    function resizeCanvas() {
+      const canvas = document.getElementById('backgroundCanvas');
+      if (!canvas) return;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    function randomColor() {
+      const colors = ['#ff9800', '#e91e63', '#00bcd4', '#8bc34a', '#ffc107', '#3f51b5', '#f44336', '#00e676', '#d500f9'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+    function createDrops(n) {
+      const drops = [];
+      for (let i = 0; i < n; i++) {
+        drops.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          r: 10 + Math.random() * 30,
+          color: randomColor(),
+          dx: (Math.random() - 0.5) * 0.7,
+          dy: (Math.random() - 0.5) * 0.7
+        });
+      }
+      return drops;
+    }
+    const drops = createDrops(35);
+    function animateDrops() {
+      const canvas = document.getElementById('backgroundCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 0.7;
+      for (const drop of drops) {
+        ctx.beginPath();
+        ctx.arc(drop.x, drop.y, drop.r, 0, 2 * Math.PI);
+        ctx.fillStyle = drop.color;
+        ctx.fill();
+        drop.x += drop.dx;
+        drop.y += drop.dy;
+        if (drop.x < 0 || drop.x > canvas.width) drop.dx *= -1;
+        if (drop.y < 0 || drop.y > canvas.height) drop.dy *= -1;
+      }
+      requestAnimationFrame(animateDrops);
+    }
+    animateDrops();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const numeroWhatsApp = "5543996070004";
+      
+      const produtos = [
+        { id: 1, nome: "Tinta Acrílica Premium Fosca (Lata 18L)", descricao: "Alta cobertura e resistência para ambientes internos e externos. Acabamento fosco perfeito.", imagem: "https://source.unsplash.com/random/500x300?sig=1", category: "Tintas", preco: 450.00 },
+        { id: 2, nome: "Tinta Esmalte Sintético Brilhante (Galão 3.6L)", descricao: "Ideal para proteger e embelezar superfícies de madeira e metal, com secagem rápida.", imagem: "https://source.unsplash.com/random/500x300?sig=2", category: "Tintas", preco: 125.50 },
+        { id: 7, nome: "Tinta Acrílica Acetinada (Lata 18L)", descricao: "Acabamento sofisticado com leve brilho, lavável e ideal para ambientes internos.", imagem: "https://source.unsplash.com/random/500x300?sig=3", category: "Tintas", preco: 490.00 },
+        { id: 8, nome: "Tinta para Piso Cimento Queimado (Galão 3.6L)", descricao: "Alta resistência ao tráfego de pessoas, ideal para áreas internas e externas.", imagem: "https://source.unsplash.com/random/500x300?sig=4", category: "Tintas", preco: 135.00 },
+        { id: 17, nome: "Tinta Epóxi Base Água Branco (Galão 3.6L)", descricao: "Ideal para áreas úmidas como banheiros e cozinhas. Super resistente e lavável.", imagem: "https://source.unsplash.com/random/500x300?sig=5", category: "Tintas", preco: 189.90 },
+        { id: 18, nome: "Tinta Emborrachada para Paredes (Lata 18L)", descricao: "Previne microfissuras e protege contra batidas de chuva. Acabamento flexível.", imagem: "https://source.unsplash.com/random/500x300?sig=6", category: "Tintas", preco: 550.00 },
+        { id: 19, nome: "Selador Acrílico para Paredes (Lata 18L)", descricao: "Prepara a superfície, uniformiza a absorção e melhora o rendimento da tinta.", imagem: "https://source.unsplash.com/random/500x300?sig=7", category: "Tintas", preco: 210.00 },
+        { id: 20, nome: "Massa Acrílica (Lata 25kg)", descricao: "Para nivelar e corrigir imperfeições em áreas externas e internas.", imagem: "https://source.unsplash.com/random/500x300?sig=8", category: "Tintas", preco: 115.00 },
+        { id: 3, nome: "Verniz Marítimo Premium (Galão 3.6L)", descricao: "Proteção tripla contra sol, chuva e maresia. Realça a beleza natural da madeira.", imagem: "https://source.unsplash.com/random/500x300?sig=9", category: "Vernizes", preco: 140.00 },
+        { id: 9, nome: "Verniz Tingidor Cor Imbuia (Lata 900ml)", descricao: "Renova, tinge e protege a madeira com um acabamento de alta qualidade.", imagem: "https://source.unsplash.com/random/500x300?sig=10", category: "Vernizes", preco: 55.00 },
+        { id: 10, nome: "Verniz Copal Brilhante (Galão 3.6L)", descricao: "Ideal para proteção de madeiras em ambientes internos, com acabamento brilhante.", imagem: "https://source.unsplash.com/random/500x300?sig=11", category: "Vernizes", preco: 110.00 },
+        { id: 21, nome: "Verniz Stain Impregnante (Lata 900ml)", descricao: "Penetra na madeira, não forma filme e tem ação hidrorrepelente.", imagem: "https://source.unsplash.com/random/500x300?sig=12", category: "Vernizes", preco: 65.00 },
+        { id: 4, nome: "Tinta Spray Multiuso Preto Fosco (400ml)", descricao: "Perfeita para projetos de artesanato, decoração e pequenos reparos.", imagem: "https://source.unsplash.com/random/500x300?sig=13", category: "Sprays", preco: 28.90 },
+        { id: 11, nome: "Tinta Spray Dourado Metálico (400ml)", descricao: "Acabamento metálico de alto brilho para objetos de decoração, móveis e mais.", imagem: "https://source.unsplash.com/random/500x300?sig=14", category: "Sprays", preco: 35.50 },
+        { id: 12, nome: "Spray Removedor de Tinta (400ml)", descricao: "Facilita a remoção de tintas antigas de diversas superfícies de forma prática.", imagem: "https://source.unsplash.com/random/500x300?sig=15", category: "Sprays", preco: 42.00 },
+        { id: 22, nome: "Tinta Spray Alta Temperatura Alumínio (400ml)", descricao: "Resistente a altas temperaturas, ideal para escapamentos, churrasqueiras e motores.", imagem: "https://source.unsplash.com/random/500x300?sig=16", category: "Sprays", preco: 45.00 },
+        { id: 23, nome: "Tinta Spray Branco Brilhante (400ml)", descricao: "Uso geral com excelente acabamento e secagem rápida para diversos materiais.", imagem: "https://source.unsplash.com/random/500x300?sig=17", category: "Sprays", preco: 28.90 },
+        { id: 5, nome: "Massa Corrida PVA (Lata 25kg)", descricao: "Nivela e corrige imperfeições em paredes internas, deixando a superfície lisa.", imagem: "https://source.unsplash.com/random/500x300?sig=18", category: "Acessórios", preco: 95.00 },
+        { id: 6, nome: "Kit de Pintura com 5 Peças", descricao: "Conjunto completo com rolo, pincel, bandeja, mexedor e lona.", imagem: "https://source.unsplash.com/random/500x300?sig=19", category: "Acessórios", preco: 45.75 },
+        { id: 13, nome: "Rolo de Lã Antigotas 23cm", descricao: "Ideal para aplicação de tintas látex PVA e acrílica. Reduz o respingo.", imagem: "https://source.unsplash.com/random/500x300?sig=20", category: "Acessórios", preco: 22.50 },
+        { id: 14, nome: "Lixa para Massa Grão 150 (Folha)", descricao: "Para preparação de superfícies, deixando a parede pronta para a pintura.", imagem: "https://source.unsplash.com/random/500x300?sig=21", category: "Acessórios", preco: 2.50 },
+        { id: 15, nome: "Fita Crepe Azul 24mm x 50m", descricao: "Não deixa resíduos de cola e oferece um acabamento de pintura perfeito.", imagem: "https://source.unsplash.com/random/500x300?sig=22", category: "Acessórios", preco: 15.80 },
+        { id: 16, nome: "Desempenadeira de Aço Lisa", descricao: "Ferramenta essencial para aplicação de massa corrida e texturas.", imagem: "https://source.unsplash.com/random/500x300?sig=23", category: "Acessórios", preco: 25.00 },
+        { id: 24, nome: "Lixa para Ferro Grão 100 (Folha)", descricao: "Ideal para remoção de ferrugem e preparação de superfícies metálicas.", imagem: "https://source.unsplash.com/random/500x300?sig=24", category: "Acessórios", preco: 3.00 },
+        { id: 25, nome: "Lixa d'Água Grão 1200 (Folha)", descricao: "Para lixamento fino e polimento em superfícies automotivas e outras.", imagem: "https://source.unsplash.com/random/500x300?sig=25", category: "Acessórios", preco: 4.50 },
+        { id: 26, nome: "Pincel Trincha Reta 2 Pol.", descricao: "Cerdas macias para um acabamento liso com tintas esmalte e verniz.", imagem: "https://source.unsplash.com/random/500x300?sig=26", category: "Acessórios", preco: 18.00 },
+        { id: 27, nome: "Lona Plástica Preta 4x5m", descricao: "Protege pisos e móveis contra respingos de tinta durante a pintura.", imagem: "https://source.unsplash.com/random/500x300?sig=27", category: "Acessórios", preco: 28.00 },
+        { id: 28, nome: "Bandeja de Pintura Grande", descricao: "Facilita o trabalho com rolos de até 23cm, otimizando o uso da tinta.", imagem: "https://source.unsplash.com/random/500x300?sig=28", category: "Acessórios", preco: 12.00 },
+        { id: 29, nome: "Espátula de Aço 8cm", descricao: "Ideal para aplicação de pequenas quantidades de massa e remoção de tinta.", imagem: "https://source.unsplash.com/random/500x300?sig=29", category: "Acessórios", preco: 9.50 },
+        { id: 30, nome: "Misturador de Tinta para Furadeira", descricao: "Haste metálica para acoplar em furadeiras e homogeneizar a tinta rapidamente.", imagem: "https://source.unsplash.com/random/500x300?sig=30", category: "Acessórios", preco: 19.90 }
+      ];
+      const productGallery = document.getElementById('product-gallery');
+      const cartItemsContainer = document.getElementById('cart-items');
+      const cartEmptyMsg = document.getElementById('cart-empty-msg');
+      const cartActions = document.getElementById('cart-actions');
+      const clearCartBtn = document.getElementById('clear-cart-btn');
+      const gerarBtn = document.getElementById('gerar-btn');
+      const resumoBox = document.getElementById('orcamento-resumo');
+      const whatsappBtn = document.getElementById('whatsapp-btn');
+      const searchBar = document.getElementById('search-bar');
+      const categoryFiltersContainer = document.getElementById('category-filters');
+      let carrinho = [];
+
+      function showToast(message) {
+        const toast = document.getElementById('toast-notification');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      }
+
+      function renderizarCategorias() {
+        const cats = ['Todos', ...new Set(produtos.map(p => p.category))];
+        categoryFiltersContainer.innerHTML = '';
+        cats.forEach(cat => {
+          const b = document.createElement('button');
+          b.className = 'filter-btn' + (cat === 'Todos' ? ' active' : '');
+          b.textContent = cat;
+          b.dataset.category = cat;
+          categoryFiltersContainer.appendChild(b);
+        });
+      }
+
+      function filtrarEExibirProdutos() {
+        const termo = searchBar.value.toLowerCase();
+        const cat = document.querySelector('.filter-btn.active').dataset.category;
+        let filtrados = produtos;
+        if (cat !== 'Todos') filtrados = filtrados.filter(p => p.category === cat);
+        if (termo) filtrados = filtrados.filter(p => p.nome.toLowerCase().includes(termo));
+        
+        if (filtrados.length === 0) {
+            productGallery.innerHTML = '<p>Nenhum produto encontrado com os filtros aplicados.</p>';
+        } else {
+            productGallery.innerHTML = filtrados.map(p => `
+            <div class="product-item">
+              <img src="${p.imagem}" alt="${p.nome}">
+              <div class="product-content">
+                <h3>${p.nome}</h3>
+                <p>${p.descricao}</p>
+                <button class="btn btn-primary add-to-cart-btn" data-id="${p.id}" data-nome="${p.nome}">Adicionar ao Orçamento</button>
+              </div>
+            </div>`).join('');
+        }
+      }
+
+      function resetarVisualizacaoOrcamento() {
+          resumoBox.style.display = 'none';
+          whatsappBtn.style.display = 'none';
+      }
+
+      function renderizarCarrinho() {
+        cartItemsContainer.innerHTML = '';
+        if (carrinho.length === 0) {
+          cartEmptyMsg.style.display = 'block';
+          cartActions.style.display = 'none';
+        } else {
+          cartEmptyMsg.style.display = 'none';
+          cartActions.style.display = 'flex';
+          cartItemsContainer.innerHTML = carrinho.map((item, i) => `
+            <div class="cart-item">
+              <span>${item.nome}</span>
+              <div class="quantity-controls">
+                <button class="quantity-btn" data-i="${i}" data-a="decrease">-</button>
+                <span>${item.quantidade}</span>
+                <button class="quantity-btn" data-i="${i}" data-a="increase">+</button>
+              </div>
+              <button class="remove-btn" data-i="${i}">✖</button>
+            </div>`).join('');
+        }
+        resetarVisualizacaoOrcamento();
+      }
+
+      function gerarOrcamento() {
+        if (carrinho.length === 0) return;
+        
+        let totalBruto = 0;
+        let html = "<h3>Resumo do Orçamento</h3><ul>------------------------------------------";
+
+        carrinho.forEach(item => {
+          const p = produtos.find(x => x.id === item.id);
+          const sub = item.quantidade * p.preco;
+          totalBruto += sub;
+          html += `<li><strong>${item.nome}</strong><br>
+                     Quantidade: ${item.quantidade} | Unit.: R$ ${p.preco.toFixed(2).replace('.', ',')}<br>
+                     Subtotal: <strong>R$ ${sub.toFixed(2).replace('.', ',')}</strong></li><br>`;
+        });
+        html += `</ul><hr style="border: 0; border-top: 1px solid #eee;">`;
+
+        let valorDesconto = 0;
+        let totalFinal = totalBruto;
+
+        if (totalBruto > 500) {
+          let itemMaisCaro = null;
+          let maiorPreco = 0;
+
+          carrinho.forEach(item => {
+            const p = produtos.find(prod => prod.id === item.id);
+            if (p.preco > maiorPreco) {
+              maiorPreco = p.preco;
+              itemMaisCaro = p;
+            }
+          });
+
+          if (itemMaisCaro) {
+            valorDesconto = maiorPreco * 0.15;
+            totalFinal = totalBruto - valorDesconto;
+
+            html += `<p style="text-align: right; margin: 0.5rem 0;">Subtotal: R$ ${totalBruto.toFixed(2).replace('.', ',')}</p>`;
+            html += `<p style="text-align: right; margin: 0.5rem 0; color: var(--success-color);">Desconto Especial (15%): <strong>- R$ ${valorDesconto.toFixed(2).replace('.', ',')}</strong></p>`;
+          }
+        }
+
+        html += `<h4 style="text-align: right; margin-top: 1rem;">Total: R$ ${totalFinal.toFixed(2).replace('.', ',')}</h4>`;
+        
+        if (valorDesconto > 0) {
+            html += `<p style="text-align: center; font-size: 0.8rem; margin-top: 1rem; color: #777;">Desconto de 15% aplicado sobre o item de maior valor.</p>`;
+        }
+
+        resumoBox.innerHTML = html;
+        resumoBox.style.display = 'block';
+        whatsappBtn.style.display = 'inline-block';
+      }
+
+      function enviarWhatsApp() {
+        let msg = `Olá! Gostaria de um orçamento:\n\n${resumoBox.innerText}`;
+        window.open(`https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(msg)}`, '_blank');
+      }
+
+      document.body.addEventListener('click', e => {
+        if (e.target.classList.contains('add-to-cart-btn')) {
+          const id = parseInt(e.target.dataset.id);
+          const nome = e.target.dataset.nome;
+          const ex = carrinho.find(it => it.id === id);
+          if (ex) ex.quantidade++;
+          else carrinho.push({ id, nome, quantidade: 1 });
+          showToast(`"${nome}" foi adicionado ao orçamento!`);
+          renderizarCarrinho();
+        }
+        if (e.target.classList.contains('quantity-btn')) {
+          const i = e.target.dataset.i;
+          const a = e.target.dataset.a;
+          if (a === 'increase') carrinho[i].quantidade++;
+          if (a === 'decrease') {
+            carrinho[i].quantidade--;
+            if (carrinho[i].quantidade <= 0) carrinho.splice(i, 1);
+          }
+          renderizarCarrinho();
+        }
+        if (e.target.classList.contains('remove-btn')) {
+          carrinho.splice(e.target.dataset.i, 1);
+          renderizarCarrinho();
+        }
+        if (e.target.classList.contains('filter-btn')) {
+          document.querySelector('.filter-btn.active').classList.remove('active');
+          e.target.classList.add('active');
+          filtrarEExibirProdutos();
+        }
+      });
+
+      searchBar.addEventListener('input', filtrarEExibirProdutos);
+      clearCartBtn.addEventListener('click', () => { carrinho = []; renderizarCarrinho(); });
+      gerarBtn.addEventListener('click', gerarOrcamento);
+      whatsappBtn.addEventListener('click', enviarWhatsApp);
+      renderizarCategorias();
+      filtrarEExibirProdutos();
+      renderizarCarrinho();
+    });
+  </script>
+</body>
+</html>
